@@ -5,7 +5,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 public class Main {
     public static void main(String[] args) {
         String botUsername = "https://t.me/XtremeFitnesBot";
-        String botToken = "8059576649:AAGdjcXAPQ8J75MEPDRakkOZUkbZNKlFvmw";
+        String botToken = "";
         String url= "https://api.telegram.org/bot"+ botToken +"/deletewebhook";
 
         try {
