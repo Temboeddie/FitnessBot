@@ -38,7 +38,7 @@ public class FitnessBot extends TelegramLongPollingBot {
 
             UserProfile userProfile = userProfiles.computeIfAbsent(chatId, id -> new UserProfile(chatId, username));
 
-            // **Only check user state if it exists, otherwise handle as a new command**
+            
             if (userStates.containsKey(chatId)) {
                 handleUserState(chatId, messageText, userProfile);
             } else {
