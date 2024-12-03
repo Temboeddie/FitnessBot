@@ -2,6 +2,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+
+
+/**
+ * Тестовый класс для FitnessBot.
+ * Этот класс содержит модульные тесты для проверки функциональности методов класса FitnessBot.
+ */
 class FitnessBotTest {
 
 
@@ -18,8 +24,7 @@ class FitnessBotTest {
 
         assertEquals("EN", userProfile.getLanguage());
 
-        assertEquals("Workout history is empty.", userProfile.getWorkoutHistory(),
-                "Workout history should be empty initially.");
+        assertEquals("Workout history is empty.", userProfile.getWorkoutHistory());
     }
 
     /**

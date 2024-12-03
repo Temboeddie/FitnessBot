@@ -14,6 +14,9 @@ public class Workout {
         this.reps = reps;
     }
 
+    /**
+     * Тестирует метод, что он возвращает правильный формат строки.
+     */
     @Override
     public String toString() {
         return String.format("%s: %d sets of %d reps", exerciseType, sets, reps);

@@ -64,7 +64,7 @@ public class FitnessBot extends TelegramLongPollingBot {
 
         switch (messageText.toLowerCase()) {
             case "/start" -> {
-                response = "Welcome to XtremeFitness! Choose your language:\nEN - English\nRU - Русский";
+                response = "Welcome to XtremeFitness! Choose your language/Добро пожаловать в XtremeFitness! Выберите язык:\nEN - English\nRU - Русский";
                 sendMessage(chatId, response);
             }
             case "en" -> {
