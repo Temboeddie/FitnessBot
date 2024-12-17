@@ -83,11 +83,58 @@ public class FitnessBot extends TelegramLongPollingBot {
                 sendMessage(chatId, response);
             }
 
+            //Добавленная команда(editworkout)
+            case "/editworkout" -> {
+                userProfile.populateWorkoutsForEditing();
+                if (userProfile.getWorkouts().isEmpty()) {
+                    response = language.equals("RU")
+                            ? "У вас нет тренировок для редактирования."
+                            : "You have no workouts to edit.";
+                } else {
+                    userStates.put(chatId, "editing_workout_id");
+                    StringBuilder workoutsList = new StringBuilder(language.equals("RU")
+                            ? "Введите ID тренировки, которую вы хотите изменить:\n"
+                            : "Enter the ID of the workout you want to edit:\n");
+
+                    int id = 1;
+                    for (Workout workout : userProfile.getWorkouts()) {
+                        workoutsList.append(id++).append(". ").append(workout).append("\n");
+                    }
+                    response = workoutsList.toString();
+                }
+                sendMessage(chatId, response);
+            }
+
+            //новый Case для удаления тренировок
+            case"/deleteworkout" ->{
+                if(userProfile.getWorkouts().isEmpty()){
+                    response=language.equals("RU")
+                            ?"У вас нет тренировок для удаления."
+                            : "You have no workouts to delete.";
+                }
+                else {
+                    userStates.put(chatId,"deleting_workout_id");
+                    StringBuilder workoutsList=new StringBuilder(language.equals("RU")
+                            ? "Введите ID тренировки, которую вы хотите удалить:\n"
+                            : "Enter the ID of the workout you want to delete:\n"
+                            );
+                    int id=1;
+                    for(Workout workout:userProfile.getWorkouts()){
+                        workoutsList.append(id++).append(".").append(workout.toString()).append("\n");
+                    }
+                    response=workoutsList.toString();
+                }
+                sendMessage(chatId,response);
+            }
+
+
 
             case "/viewhistory" -> {
                 response = userProfile.getWorkoutHistory();
                 sendMessage(chatId, response);
             }
+
+
             default -> {
                 response = language.equals("RU") ? "Неизвестная команда." : "Unknown command.";
                 sendMessage(chatId, response);
@@ -145,14 +192,14 @@ public class FitnessBot extends TelegramLongPollingBot {
                             "Exercise added: " + workout.toString();
                     sendMessage(chatId, response);
 
-                    // **Reset state and clear exercise data**:
+
                     userStates.remove(chatId);
                     userProfile.clearCurrentExerciseData();
 
-                    // **Provide next steps**:
+
                     response = language.equals("RU") ?
-                            "Тренировка успешно добавлена. Используйте /addworkout или /viewhistory." :
-                            "Workout successfully added. Use /addworkout or /viewhistory.";
+                            "Тренировка успешно добавлена. Используйте /addworkout или /viewhistory или /editworkout или /deleteWorkout." :
+                            "Workout successfully added. Use /addworkout or /viewhistory or /editworkout or /deleteWorkout.";
                     sendMessage(chatId, response);
 
                 } catch (NumberFormatException e) {
@@ -161,10 +208,109 @@ public class FitnessBot extends TelegramLongPollingBot {
                 }
             }
             default -> {
-                // **If unknown state, reset to avoid StackOverflow**:
+
                 userStates.remove(chatId);
                 sendMessage(chatId, "An error occurred. Please try again or start a new session with /addworkout.");
             }
+
+            //Добавлен Case для редактирования тренировок
+            case "editing_workout_id" -> {
+                try {
+                    int workoutId = Integer.parseInt(messageText) - 1;
+
+
+                    if (workoutId < 0 || workoutId >= userProfile.getWorkouts().size()) {
+                        response = language.equals("RU")
+                                ? "Неверный ID тренировки. Попробуйте снова."
+                                : "Invalid workout ID. Please try again.";
+                    } else {
+                        userProfile.setCurrentWorkoutIndex(workoutId);
+                        userStates.put(chatId, "editing_workout_details");
+                        response = language.equals("RU")
+                                ? "Введите новое название упражнения, количество подходов и повторений через запятую:\nПример: Жим лежа, 4, 12"
+                                : "Enter the new exercise name, sets, and reps separated by commas:\nExample: Bench Press, 4, 12";
+                    }
+                } catch (NumberFormatException e) {
+                    response = language.equals("RU")
+                            ? "Пожалуйста, введите корректный ID."
+                            : "Please enter a valid ID.";
+                }
+                sendMessage(chatId, response);
+            }
+
+            case "editing_workout_details" -> {
+                String[] details = messageText.split(",");
+                if (details.length != 3) {
+                    response = language.equals("RU")
+                            ? "Введите корректные данные (название, подходы, повторения):\nПример: Жим лежа, 4, 12"
+                            : "Please enter valid data (name, sets, reps):\nExample: Bench Press, 4, 12";
+                } else {
+                    try {
+                        String newName = details[0].trim();
+                        String setsString = details[1].trim();
+                        String repsString = details[2].trim();
+
+                        int newSets = Integer.parseInt(setsString);
+                        int newReps = Integer.parseInt(repsString);
+
+                        int currentIndex = userProfile.getCurrentWorkoutIndex();
+
+
+                        if (currentIndex < 0 || currentIndex >= userProfile.getWorkouts().size()) {
+                            System.out.println("Invalid workout index.");
+                            response = language.equals("RU")
+                                    ? "Ошибка: неверный индекс тренировки."
+                                    : "Error: Invalid workout index.";
+                        } else {
+                            Workout workout = userProfile.getWorkouts().get(currentIndex);
+
+                            workout.setExerciseName(newName);
+                            workout.setSets(newSets);
+                            workout.setReps(newReps);
+
+                            userStates.remove(chatId);
+                            userProfile.clearCurrentExerciseData();
+
+                            response = language.equals("RU")
+                                    ? "Тренировка успешно обновлена."
+                                    : "Workout successfully updated.";
+                        }
+                    } catch (NumberFormatException e) {
+                        response = language.equals("RU")
+                                ? "Введите корректное количество подходов и повторений (целые числа)."
+                                : "Please enter valid numbers for sets and reps.";
+                    }
+                }
+                sendMessage(chatId, response);
+            }
+            // для удаления тренировок
+            case "deleting_workout_id" -> {
+                try {
+                    int workoutId = Integer.parseInt(messageText) - 1;
+
+                    if (workoutId>=0 && workoutId<userProfile.getWorkouts().size()) {
+                        userProfile.deleteWorkout(workoutId);
+                        response = language.equals("RU")
+                                ? "Тренировка успешно удалена."
+                                : "Workout successfully deleted.";
+                    } else {
+                        response = language.equals("RU")
+                                ? "Неверный ID тренировки. Попробуйте снова."
+                                : "Invalid workout ID. Please try again.";
+                    }
+                } catch (NumberFormatException e) {
+                    response = language.equals("RU")
+                            ? "Введите корректный ID (число)."
+                            : "Please enter a valid ID (number).";
+                }
+
+                userStates.remove(chatId);
+                sendMessage(chatId, response);
+            }
+
+
+
+
         }
     }
 
