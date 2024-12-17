@@ -12,6 +12,8 @@ public class UserProfile {
     private int currentExerciseSets;
     private int currentExerciseReps;
     private List<Workout> workoutHistory;
+    private List<Workout> workouts=new ArrayList<>();
+    private int currentWorkoutIndex=-1;
 
     public UserProfile(Long chatId, String username) {
         this.chatId = chatId;
@@ -30,15 +32,20 @@ public class UserProfile {
 
     public void addWorkout(Workout workout) {
         workoutHistory.add(workout);
+        workouts.add(workout);
     }
 
     public String getWorkoutHistory() {
         if (workoutHistory.isEmpty()) {
             return language.equals("RU") ? "История тренировок пуста." : "Workout history is empty.";
         }
+        // Добавить идентификатор перед данными тренировки
         StringBuilder history = new StringBuilder();
+        int id = 1;
         for (Workout workout : workoutHistory) {
-            history.append(workout.toString()).append("\n");
+            history.append("ID: ").append(id++)
+                    .append(" - ").append(workout.toString())
+                    .append("\n");
         }
         return history.toString();
     }
@@ -81,5 +88,39 @@ public class UserProfile {
     public long getChatId() {
 
         return chatId;
+    }
+
+
+    public List<Workout> getWorkouts() {
+        return  workouts;
+    }
+
+
+    public void setCurrentWorkoutIndex(int index) {
+        if (index >= 0 && index < workouts.size()) {
+            this.currentWorkoutIndex = index;
+        }
+    }
+
+    public int getCurrentWorkoutIndex() {
+        return this.currentWorkoutIndex;
+    }
+    public void populateWorkoutsForEditing() {
+        workouts.clear();
+        workouts.addAll(workoutHistory);
+    }
+
+    /**
+     * Новый метод удаления тренировки по ее индексу
+     *
+     */
+
+    public boolean deleteWorkout(int index) {
+        if (index >= 0 && index < workoutHistory.size()) {
+            workoutHistory.remove(index);
+            return true;
+        }
+
+        return false;
     }
 }
