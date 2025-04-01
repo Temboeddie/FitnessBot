@@ -42,7 +42,7 @@ public class UserProfile {
         // Добавить идентификатор перед данными тренировки
         StringBuilder history = new StringBuilder();
         int id = 1;
-        for (Workout workout : workoutHistory) {
+        for (Workout workout : workouts) {
             history.append("ID: ").append(id++)
                     .append(" - ").append(workout.toString())
                     .append("\n");
@@ -117,7 +117,7 @@ public class UserProfile {
 
     public boolean deleteWorkout(int index) {
         if (index >= 0 && index < workoutHistory.size()) {
-            workoutHistory.remove(index);
+            workouts.remove(index);
             return true;
         }
 

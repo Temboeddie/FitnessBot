@@ -35,7 +35,9 @@ public class Workout {
         this.reps = reps;
     }
 
-
+    public String getExerciseName() { return exerciseName; }
+    public int getSets() { return sets; }
+    public int getReps() { return reps; }
 }
 
 

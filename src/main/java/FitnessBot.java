@@ -2,9 +2,15 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+
+import java.util.stream.Collectors;
 
 /**
  * Основной класс Telegram-бота для управления тренировками.
@@ -64,27 +70,27 @@ public class FitnessBot extends TelegramLongPollingBot {
 
         switch (messageText.toLowerCase()) {
             case "/start" -> {
-                response = "Welcome to XtremeFitness! Choose your language/Добро пожаловать в XtremeFitness! Выберите язык:\nEN - English\nRU - Русский";
-                sendMessage(chatId, response);
+                response = "Welcome to XtremeFitness! Choose your language/Добро пожаловать в XtremeFitness! Выберите язык:";
+                sendMessage(chatId, response,getLanguageButtons());
             }
             case "en" -> {
                 userProfile.setLanguage("EN");
-                response = "Language set to English. Use /addworkout to add a workout or /viewhistory to check your history.";
-                sendMessage(chatId, response);
+                response = "Language set to English. Use addworkout to add a workout or viewhistory to check your history.";
+                sendMessage(chatId, response,getMainButtons("EN"));
             }
             case "ru" -> {
                 userProfile.setLanguage("RU");
-                response = "Язык установлен на русский. Используйте /addworkout для добавления тренировки или /viewhistory для просмотра истории.";
-                sendMessage(chatId, response);
+                response = "Язык установлен на русский. Используйте addworkout для добавления тренировки или viewhistory для просмотра истории.";
+                sendMessage(chatId, response,getMainButtons("RU"));
             }
-            case "/addworkout" -> {
+            case "addworkout" -> {
                 userStates.put(chatId, "adding_workout");
                 response = language.equals("RU") ? "Введите название упражнения:" : "Please enter the name of the exercise:";
-                sendMessage(chatId, response);
+                sendMessage(chatId, response,getMainButtons(language));
             }
 
             //Добавленная команда(editworkout)
-            case "/editworkout" -> {
+            case "editworkout" -> {
                 userProfile.populateWorkoutsForEditing();
                 if (userProfile.getWorkouts().isEmpty()) {
                     response = language.equals("RU")
@@ -102,11 +108,11 @@ public class FitnessBot extends TelegramLongPollingBot {
                     }
                     response = workoutsList.toString();
                 }
-                sendMessage(chatId, response);
+                sendMessage(chatId, response,null);
             }
 
             //новый Case для удаления тренировок
-            case"/deleteworkout" ->{
+            case"deleteworkout" ->{
                 if(userProfile.getWorkouts().isEmpty()){
                     response=language.equals("RU")
                             ?"У вас нет тренировок для удаления."
@@ -124,22 +130,97 @@ public class FitnessBot extends TelegramLongPollingBot {
                     }
                     response=workoutsList.toString();
                 }
-                sendMessage(chatId,response);
+                sendMessage(chatId,response,getMainButtons(language));
             }
 
 
 
-            case "/viewhistory" -> {
+            case "viewhistory" -> {
                 response = userProfile.getWorkoutHistory();
-                sendMessage(chatId, response);
+                sendMessage(chatId, response,getMainButtons(language));
             }
 
 
             default -> {
                 response = language.equals("RU") ? "Неизвестная команда." : "Unknown command.";
-                sendMessage(chatId, response);
+                sendMessage(chatId, response,getMainButtons(language));
+            }
+            case "viewstats" -> {
+                response = getUserStats(language,userProfile);
+                sendMessage(chatId,response,getMainButtons(language));
+
+
             }
         }
+    }
+    private String getUserStats(String language, UserProfile userProfile){
+
+        List<Workout> workouts = userProfile.getWorkouts();
+        if(workouts.isEmpty()){
+            return language.equals("RU")? "У вас пока нет статистики." : "You have no Stats yet.";
+        }
+        int totalWorkouts = workouts.size();
+        int totalReps = workouts.stream().mapToInt(w->w.getSets() * w.getReps()).sum();
+
+        String favoriteExercise = workouts.stream()
+                .collect(Collectors.groupingBy(Workout::getExerciseName, Collectors.counting()))
+                .entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("None");
+        StringBuilder stats = new StringBuilder(language.equals("RU") ? "Ваша статистика:\n" : "Your stats:\n");
+        stats.append(language.equals("RU") ? "Всего тренировок: " : "Total workouts: ").append(totalWorkouts).append("\n");
+        stats.append(language.equals("RU") ? "Всего повторений: " : "Total reps: ").append(totalReps).append("\n");
+        stats.append(language.equals("RU") ? "Любимое упражнение: " : "Favorite exercise: ").append(favoriteExercise).append("\n");
+        return stats.toString();
+    }
+
+    private ReplyKeyboardMarkup getLanguageButtons() {
+        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+        keyboardMarkup.setResizeKeyboard(true); // Fit buttons to screen
+        List<KeyboardRow> keyboard = new ArrayList<>();
+
+        KeyboardRow row = new KeyboardRow();
+        row.add("EN");
+        row.add("RU");
+        keyboard.add(row);
+
+        keyboardMarkup.setKeyboard(keyboard);
+        return keyboardMarkup;
+    }
+
+
+    private ReplyKeyboardMarkup getMainButtons(String language) {
+        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+        keyboardMarkup.setResizeKeyboard(true);
+        List<KeyboardRow> keyboard = new ArrayList<>();
+
+        KeyboardRow row1 = new KeyboardRow();
+        KeyboardRow row2 = new KeyboardRow();
+        KeyboardRow row3 = new KeyboardRow();
+
+        if (language.equals("RU")) {
+            row1.add("addWorkout");
+            row1.add("viewHistory");
+            row2.add("editWorkout");
+            row2.add("deleteWorkout");
+            row3.add("viewstats");
+
+        } else {
+            row1.add("addWorkout");
+            row1.add("viewHistory");
+            row2.add("editWorkout");
+            row2.add("deleteWorkout");
+            row3.add("viewstats");
+
+        }
+
+        keyboard.add(row1);
+        keyboard.add(row2);
+        keyboard.add(row3);
+
+        keyboardMarkup.setKeyboard(keyboard);
+        return keyboardMarkup;
     }
 
     /**
@@ -160,7 +241,7 @@ public class FitnessBot extends TelegramLongPollingBot {
                 userProfile.setCurrentExerciseName(messageText);
                 userStates.put(chatId, "adding_sets");
                 response = language.equals("RU") ? "Введите количество подходов:" : "Enter the number of sets:";
-                sendMessage(chatId, response);
+                sendMessage(chatId, response,null);
             }
             case "adding_sets" -> {
                 try {
@@ -168,10 +249,10 @@ public class FitnessBot extends TelegramLongPollingBot {
                     userProfile.setCurrentExerciseSets(sets);
                     userStates.put(chatId, "adding_reps");
                     response = language.equals("RU") ? "Введите количество повторений:" : "Enter the number of reps:";
-                    sendMessage(chatId, response);
+                    sendMessage(chatId, response,null);
                 } catch (NumberFormatException e) {
                     response = language.equals("RU") ? "Пожалуйста, введите целое число для подходов." : "Please enter a valid integer for sets.";
-                    sendMessage(chatId, response);
+                    sendMessage(chatId, response,null);
                 }
             }
             case "adding_reps" -> {
@@ -190,7 +271,7 @@ public class FitnessBot extends TelegramLongPollingBot {
                     response = language.equals("RU") ?
                             "Упражнение добавлено: " + workout.toString() :
                             "Exercise added: " + workout.toString();
-                    sendMessage(chatId, response);
+                    sendMessage(chatId, response,getLanguageButtons());
 
 
                     userStates.remove(chatId);
@@ -198,19 +279,19 @@ public class FitnessBot extends TelegramLongPollingBot {
 
 
                     response = language.equals("RU") ?
-                            "Тренировка успешно добавлена. Используйте /addworkout или /viewhistory или /editworkout или /deleteWorkout." :
-                            "Workout successfully added. Use /addworkout or /viewhistory or /editworkout or /deleteWorkout.";
-                    sendMessage(chatId, response);
+                            "Тренировка успешно добавлена. Используйте addworkout или viewhistory или editworkout или deleteWorkout." :
+                            "Workout successfully added. Use addworkout or viewhistory or editworkout or deleteWorkout.";
+                    sendMessage(chatId, response,getLanguageButtons());
 
                 } catch (NumberFormatException e) {
                     response = language.equals("RU") ? "Пожалуйста, введите целое число для повторений." : "Please enter a valid integer for reps.";
-                    sendMessage(chatId, response);
+                    sendMessage(chatId, response,null);
                 }
             }
             default -> {
 
                 userStates.remove(chatId);
-                sendMessage(chatId, "An error occurred. Please try again or start a new session with /addworkout.");
+                sendMessage(chatId, "An error occurred. Please try again or start a new session with /addworkout.",null);
             }
 
             //Добавлен Case для редактирования тренировок
@@ -235,7 +316,7 @@ public class FitnessBot extends TelegramLongPollingBot {
                             ? "Пожалуйста, введите корректный ID."
                             : "Please enter a valid ID.";
                 }
-                sendMessage(chatId, response);
+                sendMessage(chatId, response,null);
             }
 
             case "editing_workout_details" -> {
@@ -244,6 +325,7 @@ public class FitnessBot extends TelegramLongPollingBot {
                     response = language.equals("RU")
                             ? "Введите корректные данные (название, подходы, повторения):\nПример: Жим лежа, 4, 12"
                             : "Please enter valid data (name, sets, reps):\nExample: Bench Press, 4, 12";
+                    sendMessage(chatId,response,null);
                 } else {
                     try {
                         String newName = details[0].trim();
@@ -274,6 +356,7 @@ public class FitnessBot extends TelegramLongPollingBot {
                             response = language.equals("RU")
                                     ? "Тренировка успешно обновлена."
                                     : "Workout successfully updated.";
+                            sendMessage(chatId,response,getMainButtons(language));
                         }
                     } catch (NumberFormatException e) {
                         response = language.equals("RU")
@@ -281,7 +364,7 @@ public class FitnessBot extends TelegramLongPollingBot {
                                 : "Please enter valid numbers for sets and reps.";
                     }
                 }
-                sendMessage(chatId, response);
+                sendMessage(chatId, response,null);
             }
             // для удаления тренировок
             case "deleting_workout_id" -> {
@@ -305,7 +388,7 @@ public class FitnessBot extends TelegramLongPollingBot {
                 }
 
                 userStates.remove(chatId);
-                sendMessage(chatId, response);
+                sendMessage(chatId, response,null);
             }
 
 
@@ -315,10 +398,13 @@ public class FitnessBot extends TelegramLongPollingBot {
     }
 
 
-    private void sendMessage(Long chatId, String text) {
+    private void sendMessage(Long chatId, String text,ReplyKeyboardMarkup keyboard) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText(text);
+        if (keyboard!=null)
+        {
+        message.setReplyMarkup(keyboard);}
         try {
             execute(message);
         } catch (TelegramApiException e) {
