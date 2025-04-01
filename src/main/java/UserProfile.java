@@ -11,15 +11,14 @@ public class UserProfile {
     private String currentExercise;
     private int currentExerciseSets;
     private int currentExerciseReps;
-    private List<Workout> workoutHistory;
-    private List<Workout> workouts=new ArrayList<>();
+    private List<Workout> workouts;
     private int currentWorkoutIndex=-1;
 
     public UserProfile(Long chatId, String username) {
         this.chatId = chatId;
         this.username = username;
         this.language = "EN";
-        this.workoutHistory = new ArrayList<>();
+        this.workouts = new ArrayList<>();
     }
 
     public String getLanguage() {
@@ -31,12 +30,11 @@ public class UserProfile {
     }
 
     public void addWorkout(Workout workout) {
-        workoutHistory.add(workout);
         workouts.add(workout);
     }
 
     public String getWorkoutHistory() {
-        if (workoutHistory.isEmpty()) {
+        if (workouts.isEmpty()) {
             return language.equals("RU") ? "История тренировок пуста." : "Workout history is empty.";
         }
         // Добавить идентификатор перед данными тренировки
@@ -106,8 +104,7 @@ public class UserProfile {
         return this.currentWorkoutIndex;
     }
     public void populateWorkoutsForEditing() {
-        workouts.clear();
-        workouts.addAll(workoutHistory);
+
     }
 
     /**
@@ -116,7 +113,7 @@ public class UserProfile {
      */
 
     public boolean deleteWorkout(int index) {
-        if (index >= 0 && index < workoutHistory.size()) {
+        if (index >= 0 && index < workouts.size()) {
             workouts.remove(index);
             return true;
         }
